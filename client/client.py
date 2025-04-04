@@ -105,6 +105,10 @@ def update_user_list(users):
     for user in users:
         if user and user != username:  # Don't show current user in the list
             users_listbox.insert("", "end", text=user, values=(user,))
+        if user==username:
+            text = f"{user} (You)"
+            users_listbox.insert("", "end", text=text, values=(user,), tags=("self",))
+
 
 def send_message():
     message = message_entry.get()
@@ -167,7 +171,7 @@ chat_box.pack(fill=tk.BOTH, expand=True)
 
 # Configure tags for WhatsApp-style message bubbles
 chat_box.tag_configure("bubble_self", background="#005C4B", foreground="#FFFFFF", 
-                       lmargin1=100, lmargin2=100, rmargin=20, spacing1=6, spacing3=6, justify="right")
+                       lmargin1=100, lmargin2=100, rmargin=20, spacing1=10, spacing3=10, justify="right")
 chat_box.tag_configure("timestamp_in_bubble_self", background="#005C4B", foreground="#AEBAC1", 
                         font=timestamp_font, justify="right")
 chat_box.tag_configure("bubble_other", background="#222E35", foreground="#FFFFFF", 
@@ -205,7 +209,7 @@ style.configure("Users.Treeview", font=('Segoe UI', 14), rowheight=35, backgroun
 style.configure("Users.Treeview.Heading", font=('Segoe UI', 14, 'bold'), background="#111B21", foreground="#FFFFFF")
 style.map('Users.Treeview', background=[('selected', '#00A884')])
 
-users_listbox = ttk.Treeview(users_panel, style="Users.Treeview", columns=("username",), show="headings", height=20)
+users_listbox = ttk.Treeview(users_panel, style="Users.Treeview", columns=("username",), show="headings", height=5)
 users_listbox.heading("username", text="Username")
 users_listbox.column("username", width=200, anchor="center")
 users_listbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)

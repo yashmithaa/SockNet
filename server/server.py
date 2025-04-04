@@ -1,27 +1,5 @@
 import socket
 import threading
-
-# Server configuration
-HOST = '127.0.0.1'  
-PORT = 12345        
-clients = {}        
-
-# Function to broadcast messages to all clients except sender
-def broadcast(message, sender_socket):
-    disconnected_clients = []
-    for client_socket in clients:
-        if client_socket != sender_socket:  
-            try:
-                client_socket.send(message.encode('utf-8'))
-            except:
-                disconnected_clients.append(client_socket)
-    
-    for client_socket in disconnected_clients:
-        if client_socket in clients:
-            client_socket.close()
-            del clients[client_socket]
-import socket
-import threading
 import datetime
 import time
 import sys
@@ -48,7 +26,6 @@ def broadcast(message, sender_socket=None):
             client_socket.close()
             del clients[client_socket]
 
-# Function to send user list to a specific client
 def send_user_list(client_socket):
     users = list(clients.values())
     user_list_message = "USERLIST:" + ",".join(users)
@@ -74,7 +51,7 @@ def handle_client(client_socket):
                 if not message:
                     break
                     
-                # Handle special command for requesting user list
+                # Handle special command for requesting user list - Debugging
                 if message == "GET_USERS":
                     send_user_list(client_socket)
                     continue
@@ -85,10 +62,9 @@ def handle_client(client_socket):
                 print(formatted_message)
                 broadcast(formatted_message, client_socket)
             except:
-                # Socket might be closed during server shutdown
                 if not server_running:
                     break
-                raise  # Re-raise the exception if server is still running
+                raise  
                 
     except Exception as e:
         print(f"Error handling client: {e}")
@@ -110,10 +86,8 @@ def shutdown_server():
     server_running = False
     print("Shutting down server...")
     
-    # Notify all clients about shutdown
     broadcast("SERVER_SHUTDOWN")
     
-    # Wait for clients to receive shutdown message
     time.sleep(1)
     
     # Close all client connections
@@ -124,7 +98,7 @@ def shutdown_server():
             pass
     
     print("All clients notified. Server is shutting down.")
-    os._exit(0)  # Force exit instead of sys.exit
+    os._exit(0)  
 
 def console_input():
     global server_running
@@ -151,7 +125,6 @@ def start_server():
 
     try:
         while server_running:
-            # Set a timeout so we can check server_running periodically
             server.settimeout(1.0)
             try:
                 client_socket, client_address = server.accept()  
@@ -177,7 +150,7 @@ def start_server():
 
 if __name__ == "__main__":
     start_server()
-# Function to handle individual client connections
+
 def handle_client(client_socket):
     try:
         client_socket.send("Enter your username: ".encode('utf-8'))
