@@ -216,7 +216,7 @@ def apply_theme():
     kick_button.configure(bg="#F15C6D", fg="#FFFFFF")
     
     
-    chat_box.tag_configure("bubble_self", background=current_theme["bubble_self"], foreground=current_theme["bubble_self_fg"], 
+    chat_box.tag_configure("bubble_self", foreground=current_theme["bubble_self_fg"], 
                        lmargin1=100, lmargin2=100, rmargin=20, spacing1=10, spacing3=10, justify="right")
     chat_box.tag_configure("timestamp_in_bubble_self", foreground=current_theme["timestamp"], 
                         font=timestamp_font, justify="right")
