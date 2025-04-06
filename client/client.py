@@ -9,7 +9,7 @@ import sys
 # Client configuration
 HOST=input("Enter the HOST IP:")
 PORT=int(input("Enter the Port number:"))
-# Client socket
+
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     client.connect((HOST, PORT))
@@ -21,7 +21,6 @@ active_users = []
 username = simpledialog.askstring("Username", "Enter your username:")
 client.send(username.encode('utf-8'))
 
-# Theme colors
 dark_theme = {
     "bg": "#0B141A",
     "chat_bg": "#0B141A",
@@ -66,7 +65,7 @@ def receive_messages():
         try:
             message = client.recv(1024).decode('utf-8')
             
-            # Check for server shutdown message
+            
             if message == "SERVER_SHUTDOWN":
                 chat_box.config(state=tk.NORMAL)
                 chat_box.insert(tk.END, "\nServer has been shut down. Application will close in 5 seconds.\n", "system")
@@ -75,7 +74,7 @@ def receive_messages():
                 root.after(5000, root.destroy)
                 break
                 
-            # Check for kick message
+            
             if message.startswith("KICKED:"):
                 kicked_user = message.split(":", 1)[1]
                 if kicked_user == username:
@@ -149,7 +148,7 @@ def send_message():
     message = message_entry.get()
     message_entry.delete(0, tk.END)
     if message:
-        # Get current time
+        
         current_time = datetime.datetime.now().strftime("%H:%M")
         
         chat_box.config(state=tk.NORMAL)
@@ -193,31 +192,31 @@ def kick_user():
         client.send(f"KICK:{user_to_kick}".encode('utf-8'))
 
 def apply_theme():
-    # Root background
+   
     root.configure(bg=current_theme["bg"])
     
-    # Chat panel
+    
     chat_panel.configure(bg=current_theme["bg"])
     chat_frame.configure(bg=current_theme["chat_bg"])
     chat_box.configure(bg=current_theme["chat_bg"], fg=current_theme["bubble_other_fg"])
     
-    # Message input area
+    
     message_frame.configure(bg=current_theme["users_bg"])
     message_entry.configure(bg=current_theme["input_bg"], fg=current_theme["input_fg"])
     send_button.configure(bg=current_theme["send_button"], fg=current_theme["send_button_fg"])
     
-    # Users panel
+    
     users_panel.configure(bg=current_theme["users_bg"])
     users_header.configure(bg=current_theme["users_bg"], fg=current_theme["users_fg"])
     help_frame.configure(bg=current_theme["users_bg"], fg=current_theme["users_fg"])
     help_label.configure(bg=current_theme["users_bg"], fg=current_theme["system_msg"])
     
-    # Theme button in right panel
+    
     theme_button.configure(bg=current_theme["send_button"], fg=current_theme["send_button_fg"])
     kick_button.configure(bg="#F15C6D", fg="#FFFFFF")
     
-    # Configure tags for chat messages
-    chat_box.tag_configure("bubble_self", foreground=current_theme["bubble_self_fg"], 
+    
+    chat_box.tag_configure("bubble_self", background=current_theme["bubble_self"], foreground=current_theme["bubble_self_fg"], 
                        lmargin1=100, lmargin2=100, rmargin=20, spacing1=10, spacing3=10, justify="right")
     chat_box.tag_configure("timestamp_in_bubble_self", foreground=current_theme["timestamp"], 
                         font=timestamp_font, justify="right")
@@ -231,7 +230,7 @@ def apply_theme():
     chat_box.tag_configure("system", justify="center", foreground=current_theme["system_msg"], font=("Segoe UI", 11, "italic"))
     chat_box.tag_configure("sender_name", foreground=current_theme["sender_name"], font=name_font, justify="left")
     
-    # Update TreeView style
+    
     style.configure("Users.Treeview", background=current_theme["users_bg"], foreground=current_theme["users_fg"], fieldbackground=current_theme["users_bg"])
     style.configure("Users.Treeview.Heading", background=current_theme["users_bg"], foreground=current_theme["users_fg"])
 
@@ -249,20 +248,19 @@ main_paned.pack(fill=tk.BOTH, expand=True)
 chat_panel = tk.Frame(main_paned, bg=current_theme["bg"])
 main_paned.add(chat_panel, width=int(screen_width * 0.7))
 
-# Right panel - Users section
 users_panel = tk.Frame(main_paned, bg=current_theme["users_bg"])
 main_paned.add(users_panel, width=int(screen_width * 0.3))
 
-# Chat section setup
+
 chat_frame = tk.Frame(chat_panel, bg=current_theme["chat_bg"])
 chat_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
-# Custom font for messages - WhatsApp-like
+
 message_font = font.Font(family="Segoe UI", size=13)
 name_font = font.Font(family="Segoe UI", size=12)
 timestamp_font = font.Font(family="Segoe UI", size=8)
 
-# Chat box with WhatsApp-style background
+
 chat_box = scrolledtext.ScrolledText(chat_frame, state=tk.DISABLED, bg=current_theme["chat_bg"], fg=current_theme["bubble_other_fg"], font=message_font, wrap=tk.WORD)
 chat_box.pack(fill=tk.BOTH, expand=True)
 
@@ -281,7 +279,7 @@ send_button.grid(row=0, column=1, padx=10, pady=10)
 
 message_entry.bind('<Return>', lambda event: send_message())
 
-# Users section setup
+
 users_header = tk.Label(users_panel, text="Active Users", font=("Segoe UI", 16, "bold"), 
                         bg=current_theme["users_bg"], fg=current_theme["users_fg"], pady=10)
 users_header.pack(fill=tk.X)
@@ -299,12 +297,12 @@ users_listbox.heading("username", text="Username")
 users_listbox.column("username", width=200, anchor="center")
 users_listbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-# Add kick button
+
 kick_button = tk.Button(users_panel, text="Kick Selected User", font=("Segoe UI", 14), 
                        bg="#F15C6D", fg="#FFFFFF", command=kick_user, pady=5)
 kick_button.pack(pady=10, padx=10, fill=tk.X)
 
-# Instructions/Help section
+
 help_frame = tk.LabelFrame(users_panel, text="Instructions", font=("Segoe UI", 14, "bold"), 
                           bg=current_theme["users_bg"], fg=current_theme["users_fg"], padx=10, pady=10)
 help_frame.pack(fill=tk.X, padx=10, pady=10)
@@ -319,6 +317,8 @@ help_label = tk.Label(help_frame, text=help_text, justify="left",
                      bg=current_theme["users_bg"], fg=current_theme["system_msg"], font=("Segoe UI", 12))
 help_label.pack(anchor="w")
 
+
+theme_button = tk.Button(users_panel, text="☀️ Light Mode", font=("Segoe UI", 14),
 # Theme toggle button in right panel (moved above exit button)
 theme_button = tk.Button(users_panel, text="Light Mode", font=("Segoe UI", 14),
                         bg=current_theme["send_button"], fg=current_theme["send_button_fg"],
@@ -333,14 +333,14 @@ chat_box.config(state=tk.NORMAL)
 chat_box.insert(tk.END, "\nWelcome to the chat! Connected to server.\n", "system")
 chat_box.config(state=tk.DISABLED)
 
-# Apply theme to initialize all colors
+
 apply_theme()
 
 threading.Thread(target=receive_messages, daemon=True).start()
 
 message_entry.focus_set()
 
-# Request user list after connecting
+
 root.after(1000, lambda: client.send("GET_USERS".encode('utf-8')))
 
 root.mainloop()
