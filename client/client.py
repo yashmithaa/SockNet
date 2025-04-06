@@ -317,8 +317,6 @@ help_label = tk.Label(help_frame, text=help_text, justify="left",
                      bg=current_theme["users_bg"], fg=current_theme["system_msg"], font=("Segoe UI", 12))
 help_label.pack(anchor="w")
 
-
-theme_button = tk.Button(users_panel, text="☀️ Light Mode", font=("Segoe UI", 14),
 # Theme toggle button in right panel (moved above exit button)
 theme_button = tk.Button(users_panel, text="Light Mode", font=("Segoe UI", 14),
                         bg=current_theme["send_button"], fg=current_theme["send_button_fg"],
