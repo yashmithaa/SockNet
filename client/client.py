@@ -168,10 +168,10 @@ def toggle_theme():
     global current_theme
     if current_theme == dark_theme:
         current_theme = light_theme
-        theme_button.config(text="🌙 Dark Mode")
+        theme_button.config(text="Dark Mode")
     else:
         current_theme = dark_theme
-        theme_button.config(text="☀️ Light Mode")
+        theme_button.config(text="Light Mode")
     
     apply_theme()
 
@@ -217,17 +217,17 @@ def apply_theme():
     kick_button.configure(bg="#F15C6D", fg="#FFFFFF")
     
     # Configure tags for chat messages
-    chat_box.tag_configure("bubble_self", background=current_theme["bubble_self"], foreground=current_theme["bubble_self_fg"], 
+    chat_box.tag_configure("bubble_self", foreground=current_theme["bubble_self_fg"], 
                        lmargin1=100, lmargin2=100, rmargin=20, spacing1=10, spacing3=10, justify="right")
-    chat_box.tag_configure("timestamp_in_bubble_self", background=current_theme["bubble_self"], foreground=current_theme["timestamp"], 
+    chat_box.tag_configure("timestamp_in_bubble_self", foreground=current_theme["timestamp"], 
                         font=timestamp_font, justify="right")
     
-    chat_box.tag_configure("bubble_other", background=current_theme["bubble_other"], foreground=current_theme["bubble_other_fg"], 
+    chat_box.tag_configure("bubble_other", foreground=current_theme["bubble_other_fg"], 
                        lmargin1=20, lmargin2=20, rmargin=100, spacing1=6, spacing3=6, justify="left")
-    chat_box.tag_configure("timestamp_in_bubble", background=current_theme["bubble_other"], foreground=current_theme["timestamp"], 
+    chat_box.tag_configure("timestamp_in_bubble", foreground=current_theme["timestamp"], 
                         font=timestamp_font, justify="right")
     
-    chat_box.tag_configure("bubble_spacer", background=current_theme["chat_bg"], spacing1=4)
+    chat_box.tag_configure("bubble_spacer", spacing1=4)
     chat_box.tag_configure("system", justify="center", foreground=current_theme["system_msg"], font=("Segoe UI", 11, "italic"))
     chat_box.tag_configure("sender_name", foreground=current_theme["sender_name"], font=name_font, justify="left")
     
@@ -320,7 +320,7 @@ help_label = tk.Label(help_frame, text=help_text, justify="left",
 help_label.pack(anchor="w")
 
 # Theme toggle button in right panel (moved above exit button)
-theme_button = tk.Button(users_panel, text="☀️ Light Mode", font=("Segoe UI", 14),
+theme_button = tk.Button(users_panel, text="Light Mode", font=("Segoe UI", 14),
                         bg=current_theme["send_button"], fg=current_theme["send_button_fg"],
                         command=toggle_theme, pady=5)
 theme_button.pack(pady=10, padx=10, fill=tk.X)
