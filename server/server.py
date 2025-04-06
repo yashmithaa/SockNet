@@ -6,8 +6,9 @@ import sys
 import os
 
 # Server configuration
-HOST = '127.0.0.1'  
-PORT = 12345        
+HOST=input("Enter the HOST IP:")
+PORT=int(input("Enter the Port number:"))
+
 clients = {}
 server_running = True
 
@@ -34,6 +35,53 @@ def send_user_list(client_socket):
     except:
         print(f"Error sending user list to {clients.get(client_socket, 'unknown')}")
 
+def send_user_list_to_all():
+    users = list(clients.values())
+    user_list_message = "USERLIST:" + ",".join(users)
+    for client_socket in clients:
+        try:
+            client_socket.send(user_list_message.encode('utf-8'))
+        except:
+            print(f"Error sending user list to {clients.get(client_socket, 'unknown')}")
+
+def kick_user(username, sender_socket):
+    # Find the socket of the user to kick
+    user_socket = None
+    for sock, name in clients.items():
+        if name == username:
+            user_socket = sock
+            break
+    
+    if not user_socket:
+        return False
+    
+    # Send kick notification to the kicked user
+    try:
+        user_socket.send(f"KICKED:{username}".encode('utf-8'))
+    except:
+        pass
+    
+    # Notify all other users about the kick
+    current_time = datetime.datetime.now().strftime("%H:%M")
+    kick_message = f"{username} has been kicked from the chat. [{current_time}]"
+    broadcast(kick_message)
+    print(kick_message)
+    
+    # Remove the kicked user from clients dictionary
+    if user_socket in clients:
+        del clients[user_socket]
+        
+    # Update the user list for all remaining clients
+    send_user_list_to_all()
+    
+    # Close the socket connection
+    try:
+        user_socket.close()
+    except:
+        pass
+    
+    return True
+
 # Function to handle individual client connections
 def handle_client(client_socket):
     global server_running
@@ -45,15 +93,25 @@ def handle_client(client_socket):
         broadcast(join_message, client_socket)
         print(join_message)
         
+        # Send updated user list to all clients
+        send_user_list_to_all()
+        
         while server_running:
             try:
                 message = client_socket.recv(1024).decode('utf-8')
                 if not message:
                     break
                     
-                # Handle special command for requesting user list - Debugging
+                # Handle special command for requesting user list
                 if message == "GET_USERS":
                     send_user_list(client_socket)
+                    continue
+                
+                # Handle kick command
+                if message.startswith("KICK:"):
+                    user_to_kick = message.split(":", 1)[1]
+                    if kick_user(user_to_kick, client_socket):
+                        print(f"{clients[client_socket]} kicked {user_to_kick} from the chat")
                     continue
                 
                 # Add timestamp to the message - format changed to whatsapp style
@@ -76,6 +134,8 @@ def handle_client(client_socket):
             broadcast(leave_message, client_socket)
             print(leave_message)
             del clients[client_socket]
+            # Update user list for all clients
+            send_user_list_to_all()
         try:
             client_socket.close()
         except:
@@ -147,52 +207,6 @@ def start_server():
         except:
             pass
         print("Server has been shut down.")
-
-if __name__ == "__main__":
-    start_server()
-
-def handle_client(client_socket):
-    try:
-        client_socket.send("Enter your username: ".encode('utf-8'))
-        username = client_socket.recv(1024).decode('utf-8')
-        clients[client_socket] = username
-        broadcast(f"{username} has joined the chat!", client_socket)
-        print(f"{username} has joined the chat!")
-        
-        while True:
-            message = client_socket.recv(1024).decode('utf-8')
-            if not message:
-                break
-            print(f"{username}: {message}")
-            broadcast(f"{username}: {message}", client_socket)
-    except Exception as e:
-        print(f"Error handling client: {e}")
-    finally:
-        if client_socket in clients:
-            username = clients[client_socket]
-            broadcast(f"{username} has left the chat.", client_socket)
-            print(f"{username} has left the chat.")
-            del clients[client_socket]
-        client_socket.close()
-
-def start_server():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
-    
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    
-    server.bind((HOST, PORT)) 
-    server.listen(5)  
-    print(f"Server started on {HOST}:{PORT}")
-
-    try:
-        while True:
-            client_socket, client_address = server.accept()  
-            print(f"New connection from {client_address}")
-            threading.Thread(target=handle_client, args=(client_socket,)).start()
-    except KeyboardInterrupt:
-        print("Server shutting down...")
-    finally:
-        server.close()
 
 if __name__ == "__main__":
     start_server()
