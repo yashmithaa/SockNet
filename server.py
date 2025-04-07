@@ -26,13 +26,13 @@ def broadcast(message, sender_socket=None):
             client_socket.close()
             del clients[client_socket]
 
-def send_user_list(client_socket):
-    users = list(clients.values())
-    user_list_message = "USERLIST:" + ",".join(users)
-    try:
-        client_socket.send(user_list_message.encode('utf-8'))
-    except:
-        print(f"Error sending user list to {clients.get(client_socket, 'unknown')}")
+# def send_user_list(client_socket):
+#     users = list(clients.values())
+#     user_list_message = "USERLIST:" + ",".join(users)
+#     try:
+#         client_socket.send(user_list_message.encode('utf-8'))
+#     except:
+#         print(f"Error sending user list to {clients.get(client_socket, 'unknown')}")
 
 def send_user_list_to_all():
     users = list(clients.values())
@@ -102,9 +102,9 @@ def handle_client(client_socket):
                     break
                     
                 
-                if message == "GET_USERS":
-                    send_user_list(client_socket)
-                    continue
+                # if message == "GET_USERS":
+                #     send_user_list(client_socket)
+                #     continue
                 
                 
                 if message.startswith("KICK:"):
