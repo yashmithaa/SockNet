@@ -9,6 +9,7 @@ import sys
 # Global variables
 client = None
 username = None
+connection_info = {"host": "", "port": 0}
 
 # Themes
 dark_theme = {
@@ -80,7 +81,7 @@ def create_connection_window():
                          bg=current_theme["input_bg"], fg=current_theme["input_fg"],
                          insertbackground=current_theme["input_fg"])
     host_entry.grid(row=0, column=1, sticky="ew", pady=5)
-    host_entry.insert(0, "127.0.0.1")  # Default localhost
+    host_entry.insert(0, "172.16.5.66")  # Default localhost
     
     port_label = tk.Label(form_frame, text="Port:", 
                          font=("Segoe UI", 12), 
@@ -91,7 +92,7 @@ def create_connection_window():
                          bg=current_theme["input_bg"], fg=current_theme["input_fg"],
                          insertbackground=current_theme["input_fg"])
     port_entry.grid(row=1, column=1, sticky="ew", pady=5)
-    port_entry.insert(0, "5555")  # Default port
+    port_entry.insert(0, "12345")  # Default port
     
     username_label = tk.Label(form_frame, text="Username:", 
                              font=("Segoe UI", 12), 
@@ -113,7 +114,7 @@ def create_connection_window():
     
     def try_connect():
         nonlocal conn_window
-        global client, username
+        global client, username, connection_info
         
         host = host_entry.get().strip()
         port_str = port_entry.get().strip()
@@ -144,7 +145,13 @@ def create_connection_window():
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client.connect((host, port))
             username = user
+            # Store connection info for display
+            connection_info["host"] = host
+            connection_info["port"] = port
+            
+            # Send username
             client.send(username.encode('utf-8'))
+            
             conn_window.destroy()
             create_main_window()
         except Exception as e:
@@ -314,7 +321,7 @@ def apply_theme():
     users_panel.configure(bg=current_theme["users_bg"])
     users_header.configure(bg=current_theme["users_bg"], fg=current_theme["users_fg"])
     help_frame.configure(bg=current_theme["users_bg"], fg=current_theme["users_fg"])
-    help_label.configure(bg=current_theme["users_bg"], fg=current_theme["system_msg"])
+    connection_info_label.configure(bg=current_theme["users_bg"], fg=current_theme["system_msg"])
     
     theme_button.configure(bg=current_theme["send_button"], fg=current_theme["send_button_fg"])
     kick_button.configure(bg="#F15C6D", fg="#FFFFFF")
@@ -338,7 +345,7 @@ def apply_theme():
 
 def create_main_window():
     global root, chat_panel, chat_frame, chat_box, message_frame, message_entry, send_button
-    global users_panel, users_header, users_listbox, help_frame, help_label, theme_button
+    global users_panel, users_header, users_listbox, help_frame, connection_info_label, theme_button
     global kick_button, name_font, timestamp_font, style
     
     root = tk.Tk()
@@ -404,19 +411,32 @@ def create_main_window():
                            bg="#F15C6D", fg="#FFFFFF", command=kick_user, pady=5)
     kick_button.pack(pady=10, padx=10, fill=tk.X)
 
-    help_frame = tk.LabelFrame(users_panel, text="Instructions", font=("Segoe UI", 14, "bold"), 
+    help_frame = tk.LabelFrame(users_panel, text="Connection Information", font=("Segoe UI", 14, "bold"), 
                               bg=current_theme["users_bg"], fg=current_theme["users_fg"], padx=10, pady=10)
     help_frame.pack(fill=tk.X, padx=10, pady=10)
 
-    help_text = """• Type your message and press Enter or click Send
-• Select a user and click 'Kick' to remove them
-• Application will close if server shuts down
-• Messages show timestamps (HH:MM)
-• Toggle between light and dark mode using the button below"""
+    # Create connection info text with user's IP and port
+    connection_info_text = f"""User: {username}
+Server IP address: {connection_info["host"]}
+Port number: {connection_info["port"]}"""
 
-    help_label = tk.Label(help_frame, text=help_text, justify="left", 
-                         bg=current_theme["users_bg"], fg=current_theme["system_msg"], font=("Segoe UI", 12))
-    help_label.pack(anchor="w")
+    connection_info_label = tk.Label(help_frame, text=connection_info_text, justify="left", 
+                                    bg=current_theme["users_bg"], fg=current_theme["system_msg"], font=("Segoe UI", 12))
+    connection_info_label.pack(anchor="w")
+
+    # Instructions frame
+    instructions_frame = tk.LabelFrame(users_panel, text="Instructions", font=("Segoe UI", 14, "bold"), 
+                                      bg=current_theme["users_bg"], fg=current_theme["users_fg"], padx=10, pady=10)
+    instructions_frame.pack(fill=tk.X, padx=10, pady=10)
+    
+    instructions_text = """• Type your message and press Enter or click Send
+• Select a user and click 'Kick' to remove them 
+• Application will close if server shuts down
+• Messages show timestamps (HH:MM)"""
+    
+    instructions_label = tk.Label(instructions_frame, text=instructions_text, justify="left", 
+                                 bg=current_theme["users_bg"], fg=current_theme["system_msg"], font=("Segoe UI", 12))
+    instructions_label.pack(anchor="w")
 
     theme_button = tk.Button(users_panel, text="Light Mode", font=("Segoe UI", 14),
                             bg=current_theme["send_button"], fg=current_theme["send_button_fg"],
@@ -436,8 +456,6 @@ def create_main_window():
     threading.Thread(target=receive_messages, daemon=True).start()
 
     message_entry.focus_set()
-
-    root.after(1000, lambda: client.send("GET_USERS".encode('utf-8')))
 
     root.mainloop()
 
