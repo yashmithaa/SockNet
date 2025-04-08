@@ -4,10 +4,18 @@ import datetime
 import time
 import sys
 import os
+import ssl 
 
+def get_input(prompt, default=None):
+    user_input = input(prompt)
+    if not user_input and default is not None:
+        return default
+    return user_input
 
-HOST=input("Enter the HOST IP:")
-PORT=int(input("Enter the Port number:"))
+HOST = get_input("Enter the HOST IP (default: 0.0.0.0): ", "0.0.0.0")
+PORT = int(get_input("Enter the Port number (default: 12345): ", "12345"))
+CERT_FILE = get_input("Enter path to certificate file (default: server.cert): ", "server.cert")
+KEY_FILE = get_input("Enter path to key file (default: server.key): ", "server.key")
 
 clients = {}
 server_running = True
@@ -26,14 +34,6 @@ def broadcast(message, sender_socket=None):
             client_socket.close()
             del clients[client_socket]
 
-# def send_user_list(client_socket):
-#     users = list(clients.values())
-#     user_list_message = "USERLIST:" + ",".join(users)
-#     try:
-#         client_socket.send(user_list_message.encode('utf-8'))
-#     except:
-#         print(f"Error sending user list to {clients.get(client_socket, 'unknown')}")
-
 def send_user_list_to_all():
     users = list(clients.values())
     user_list_message = "USERLIST:" + ",".join(users)
@@ -44,7 +44,6 @@ def send_user_list_to_all():
             print(f"Error sending user list to {clients.get(client_socket, 'unknown')}")
 
 def kick_user(username, sender_socket):
-    
     user_socket = None
     for sock, name in clients.items():
         if name == username:
@@ -54,25 +53,20 @@ def kick_user(username, sender_socket):
     if not user_socket:
         return False
     
-    
     try:
         user_socket.send(f"KICKED:{username}".encode('utf-8'))
     except:
         pass
     
-   
     current_time = datetime.datetime.now().strftime("%H:%M")
     kick_message = f"{username} has been kicked from the chat. [{current_time}]"
     broadcast(kick_message)
     print(kick_message)
     
-    
     if user_socket in clients:
         del clients[user_socket]
         
-    
     send_user_list_to_all()
-    
     
     try:
         user_socket.close()
@@ -80,7 +74,6 @@ def kick_user(username, sender_socket):
         pass
     
     return True
-
 
 def handle_client(client_socket):
     global server_running
@@ -92,7 +85,6 @@ def handle_client(client_socket):
         broadcast(join_message, client_socket)
         print(join_message)
         
-        
         send_user_list_to_all()
         
         while server_running:
@@ -100,19 +92,12 @@ def handle_client(client_socket):
                 message = client_socket.recv(1024).decode('utf-8')
                 if not message:
                     break
-                    
-                
-                # if message == "GET_USERS":
-                #     send_user_list(client_socket)
-                #     continue
-                
                 
                 if message.startswith("KICK:"):
                     user_to_kick = message.split(":", 1)[1]
                     if kick_user(user_to_kick, client_socket):
                         print(f"{clients[client_socket]} kicked {user_to_kick} from the chat")
                     continue
-                
                 
                 current_time = datetime.datetime.now().strftime("%H:%M")
                 formatted_message = f"{username} [{current_time}]: {message}"
@@ -149,7 +134,6 @@ def shutdown_server():
     
     time.sleep(1)
     
-    
     for client_socket in list(clients.keys()):
         try:
             client_socket.close()
@@ -169,33 +153,55 @@ def console_input():
 
 def start_server():
     global server_running
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
     
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     
-    server.bind((HOST, PORT)) 
-    server.listen(5)
-    print(f"Server started on {HOST}:{PORT}")
-    print("Type 'shutdown' to stop the server.")
-    
-    
-    console_thread = threading.Thread(target=console_input, daemon=True)
-    console_thread.start()
-
     try:
+        
+        context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        
+        try:
+            context.load_cert_chain(certfile=CERT_FILE, keyfile=KEY_FILE)
+        except (FileNotFoundError, ssl.SSLError) as e:
+            print(f"Error loading certificates: {e}")
+            print("Make sure you've generated server.cert and server.key files.")
+            print("You can generate them with these commands:")
+            print("openssl genrsa -out server.key 2048")
+            print("openssl req -new -x509 -key server.key -out server.cert -days 365 -subj \"/CN=localhost\"")
+            return
+        
+        server.bind((HOST, PORT))
+        server.listen(5)
+        
+        print(f"Secure server started on {HOST}:{PORT}")
+        print("Using TLS/SSL encryption for secure communication")
+        print("Type 'shutdown' to stop the server.")
+        
+        console_thread = threading.Thread(target=console_input, daemon=True)
+        console_thread.start()
+        
         while server_running:
             server.settimeout(1.0)
             try:
-                client_socket, client_address = server.accept()  
+                client_socket, client_address = server.accept()
                 print(f"New connection from {client_address}")
-                client_thread = threading.Thread(target=handle_client, args=(client_socket,))
+                
+                secure_socket = context.wrap_socket(client_socket, server_side=True)
+                
+                client_thread = threading.Thread(target=handle_client, args=(secure_socket,))
                 client_thread.daemon = True
                 client_thread.start()
+            
             except socket.timeout:
+                continue
+            except ssl.SSLError as e:
+                print(f"SSL Error: {e}")
                 continue
             except Exception as e:
                 if server_running:
                     print(f"Error accepting connection: {e}")
+        
     except KeyboardInterrupt:
         print("Keyboard interrupt detected.")
         shutdown_server()

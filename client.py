@@ -5,13 +5,12 @@ from tkinter import scrolledtext, font, messagebox
 from tkinter import ttk
 import datetime
 import sys
+import ssl
 
-# Global variables
 client = None
 username = None
 connection_info = {"host": "", "port": 0}
 
-# Themes
 dark_theme = {
     "bg": "#0B141A",
     "chat_bg": "#0B141A",
@@ -56,14 +55,14 @@ def create_connection_window():
     conn_window.configure(bg=current_theme["bg"])
     
     window_width = 400
-    window_height = 300
+    window_height = 350  # Increased height to accommodate certificate field
     screen_width = conn_window.winfo_screenwidth()
     screen_height = conn_window.winfo_screenheight()
     x = int((screen_width / 2) - (window_width / 2))
     y = int((screen_height / 2) - (window_height / 2))
     conn_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
     
-    title_label = tk.Label(conn_window, text="SockNet", 
+    title_label = tk.Label(conn_window, text="SockNet Secure", 
                           font=("Segoe UI", 18, "bold"), 
                           bg=current_theme["bg"], fg=current_theme["users_fg"],
                           pady=15)
@@ -81,7 +80,7 @@ def create_connection_window():
                          bg=current_theme["input_bg"], fg=current_theme["input_fg"],
                          insertbackground=current_theme["input_fg"])
     host_entry.grid(row=0, column=1, sticky="ew", pady=5)
-    host_entry.insert(0, "172.16.5.66")  # Default localhost
+    host_entry.insert(0, "172.16.5.66")  
     
     port_label = tk.Label(form_frame, text="Port:", 
                          font=("Segoe UI", 12), 
@@ -92,23 +91,34 @@ def create_connection_window():
                          bg=current_theme["input_bg"], fg=current_theme["input_fg"],
                          insertbackground=current_theme["input_fg"])
     port_entry.grid(row=1, column=1, sticky="ew", pady=5)
-    port_entry.insert(0, "12345")  # Default port
+    port_entry.insert(0, "12345")  
+    
+    cert_label = tk.Label(form_frame, text="Certificate:", 
+                         font=("Segoe UI", 12), 
+                         bg=current_theme["bg"], fg=current_theme["users_fg"])
+    cert_label.grid(row=2, column=0, sticky="w", pady=5)
+    
+    cert_entry = tk.Entry(form_frame, font=("Segoe UI", 12),
+                         bg=current_theme["input_bg"], fg=current_theme["input_fg"],
+                         insertbackground=current_theme["input_fg"])
+    cert_entry.grid(row=2, column=1, sticky="ew", pady=5)
+    cert_entry.insert(0, "server.cert")  # Default certificate file
     
     username_label = tk.Label(form_frame, text="Username:", 
                              font=("Segoe UI", 12), 
                              bg=current_theme["bg"], fg=current_theme["users_fg"])
-    username_label.grid(row=2, column=0, sticky="w", pady=5)
+    username_label.grid(row=3, column=0, sticky="w", pady=5)
     
     username_entry = tk.Entry(form_frame, font=("Segoe UI", 12),
                              bg=current_theme["input_bg"], fg=current_theme["input_fg"],
                              insertbackground=current_theme["input_fg"])
-    username_entry.grid(row=2, column=1, sticky="ew", pady=5)
+    username_entry.grid(row=3, column=1, sticky="ew", pady=5)
     
     status_var = tk.StringVar()
     status_label = tk.Label(form_frame, textvariable=status_var,
                            font=("Segoe UI", 10), 
                            bg=current_theme["bg"], fg="#F15C6D")
-    status_label.grid(row=3, column=0, columnspan=2, pady=10)
+    status_label.grid(row=4, column=0, columnspan=2, pady=10)
     
     form_frame.columnconfigure(1, weight=1)
     
@@ -119,6 +129,7 @@ def create_connection_window():
         host = host_entry.get().strip()
         port_str = port_entry.get().strip()
         user = username_entry.get().strip()
+        cert_file = cert_entry.get().strip()
         
         if not host:
             status_var.set("Please enter a host IP address")
@@ -138,39 +149,58 @@ def create_connection_window():
             status_var.set("Please enter a username")
             return
             
-        status_var.set("Connecting...")
+        status_var.set("Connecting securely...")
         conn_window.update()
         
         try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((host, port))
+            
+            ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            
+            # Load the server's certificate for verification if provided
+            # if cert_file:
+            #     try:
+            #         ssl_context.load_verify_locations(cert_file)
+            #     except Exception as e:
+            #         status_var.set(f"Certificate error: {str(e)}")
+            #         return
+            # else:
+                # If no certificate file provided, don't verify (less secure)
+            ssl_context.check_hostname = False
+            # ssl_context.verify_mode = ssl.CERT_NONE
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+            ssl_context.load_verify_locations('server.cert')
+
+                
+            plain_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            plain_socket.connect((host, port))
+            client = ssl_context.wrap_socket(plain_socket, server_hostname=host)
+            
             username = user
-            # Store connection info for display
             connection_info["host"] = host
             connection_info["port"] = port
             
-            # Send username
             client.send(username.encode('utf-8'))
             
             conn_window.destroy()
             create_main_window()
+            
         except Exception as e:
-            status_var.set(f"Connection failed: {str(e)}")
+            status_var.set(f"Secure connection failed: {str(e)}")
             client = None
     
-    connect_button = tk.Button(form_frame, text="Connect", 
+    connect_button = tk.Button(form_frame, text="Connect Securely", 
                               font=("Segoe UI", 12, "bold"),
                               bg=current_theme["send_button"], fg=current_theme["send_button_fg"],
                               command=try_connect,
                               padx=20, pady=5)
-    connect_button.grid(row=4, column=0, columnspan=2, pady=15)
+    connect_button.grid(row=5, column=0, columnspan=2, pady=15)
     
     exit_button = tk.Button(form_frame, text="Exit", 
                            font=("Segoe UI", 12),
                            bg="#F15C6D", fg="#FFFFFF",
                            command=conn_window.destroy,
                            padx=20, pady=5)
-    exit_button.grid(row=5, column=0, columnspan=2, pady=5)
+    exit_button.grid(row=6, column=0, columnspan=2, pady=5)
     
     username_entry.focus_set()
     
@@ -349,7 +379,7 @@ def create_main_window():
     global kick_button, name_font, timestamp_font, style
     
     root = tk.Tk()
-    root.title(f"Chat App - {username}")
+    root.title(f"Secure Chat - {username}")
     root.configure(bg=current_theme["bg"])  
 
     root.attributes('-fullscreen', True)
@@ -411,14 +441,15 @@ def create_main_window():
                            bg="#F15C6D", fg="#FFFFFF", command=kick_user, pady=5)
     kick_button.pack(pady=10, padx=10, fill=tk.X)
 
-    help_frame = tk.LabelFrame(users_panel, text="Connection Information", font=("Segoe UI", 14, "bold"), 
+    help_frame = tk.LabelFrame(users_panel, text="Secure Connection Information", font=("Segoe UI", 14, "bold"), 
                               bg=current_theme["users_bg"], fg=current_theme["users_fg"], padx=10, pady=10)
     help_frame.pack(fill=tk.X, padx=10, pady=10)
 
     # Create connection info text with user's IP and port
     connection_info_text = f"""User: {username}
 Server IP address: {connection_info["host"]}
-Port number: {connection_info["port"]}"""
+Port number: {connection_info["port"]}
+Connection: Encrypted with TLS"""
 
     connection_info_label = tk.Label(help_frame, text=connection_info_text, justify="left", 
                                     bg=current_theme["users_bg"], fg=current_theme["system_msg"], font=("Segoe UI", 12))
@@ -432,7 +463,8 @@ Port number: {connection_info["port"]}"""
     instructions_text = """• Type your message and press Enter or click Send
 • Select a user and click 'Kick' to remove them 
 • Application will close if server shuts down
-• Messages show timestamps (HH:MM)"""
+• Messages show timestamps (HH:MM)
+• Your connection is secure and encrypted"""
     
     instructions_label = tk.Label(instructions_frame, text=instructions_text, justify="left", 
                                  bg=current_theme["users_bg"], fg=current_theme["system_msg"], font=("Segoe UI", 12))
@@ -448,7 +480,7 @@ Port number: {connection_info["port"]}"""
     exit_button.pack(pady=10, padx=10, fill=tk.X)
 
     chat_box.config(state=tk.NORMAL)
-    chat_box.insert(tk.END, "\nWelcome to the chat! Connected to server.\n", "system")
+    chat_box.insert(tk.END, "\nWelcome to the secure chat! Connected to server with TLS encryption.\n", "system")
     chat_box.config(state=tk.DISABLED)
 
     apply_theme()
