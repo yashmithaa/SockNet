@@ -445,7 +445,7 @@ def create_main_window():
                               bg=current_theme["users_bg"], fg=current_theme["users_fg"], padx=10, pady=10)
     help_frame.pack(fill=tk.X, padx=10, pady=10)
 
-    # Create connection info text with user's IP and port
+    
     connection_info_text = f"""User: {username}
 Server IP address: {connection_info["host"]}
 Port number: {connection_info["port"]}
@@ -455,7 +455,7 @@ Connection: Encrypted with TLS"""
                                     bg=current_theme["users_bg"], fg=current_theme["system_msg"], font=("Segoe UI", 12))
     connection_info_label.pack(anchor="w")
 
-    # Instructions frame
+    
     instructions_frame = tk.LabelFrame(users_panel, text="Instructions", font=("Segoe UI", 14, "bold"), 
                                       bg=current_theme["users_bg"], fg=current_theme["users_fg"], padx=10, pady=10)
     instructions_frame.pack(fill=tk.X, padx=10, pady=10)
